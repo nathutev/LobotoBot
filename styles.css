@@ -1,0 +1,296 @@
+#wb-hint-panel {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 9999999;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+#wb-hint-panel * {
+    box-sizing: border-box;
+}
+
+#wb-hint-panel.wb-shrunk {
+    width: 23px;
+    height: 27px;
+    background-color: transparent !important;
+    opacity: 0.3 !important;
+    accent-color: black;
+    box-shadow: none;
+}
+
+#wb-hint-panel.wb-shrunk:hover {
+    background: #334155;
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+#wb-hint-panel.wb-shrunk .wb-panel-full {
+    display: none !important;
+}
+
+#wb-hint-panel:not(.wb-shrunk) .wb-panel-mini {
+    display: none !important;
+}
+
+.wb-pill-icon {
+    font-size: 15px;
+    line-height: 1;
+}
+
+.wb-pill-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+}
+
+.wb-pill-dot.wb-dot-waiting {
+    background: #f59e0b;
+}
+
+#wb-hint-panel:not(.wb-shrunk) {
+    width: 330px;
+    max-width: calc(100vw - 28px);
+    background: #1e293b;
+    color: #f8fafc;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+}
+
+.wb-header {
+    background: #0f172a;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+}
+
+.wb-header-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #f8fafc;
+}
+
+.wb-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.wb-btn-minimize {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 4px 6px;
+    border-radius: 4px;}
+
+.wb-btn-minimize:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.wb-body {
+    padding: 12px 14px;
+    max-height: 480px;
+    overflow-y: auto;
+}
+
+.wb-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.wb-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
+/* Single Word Display */
+.wb-card-pair {
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wb-word-block {
+    margin-bottom: 10px;
+}
+
+.wb-word-block:last-child {
+    margin-bottom: 0;
+}
+
+.wb-word-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+}
+
+.wb-badge-de {
+    color: #38bdf8;
+}
+
+.wb-badge-cz {
+    color: #fbbf24;
+}
+
+.wb-word-text {
+    font-size: 17px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.3;
+    word-break: break-word;
+    user-select: text;
+}
+
+.wb-word-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 8px 0;
+}
+
+.wb-answer-indicator {
+    margin-top: 10px;
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    color: #4ade80;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: text;
+}
+
+/* Multi-pair List (Find pair, match pair, pexeso) */
+.wb-multi-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.wb-multi-item {
+    background: #0f172a;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.wb-multi-de {
+    font-size: 14px;
+    font-weight: 700;
+    color: #38bdf8;
+    user-select: text;
+}
+
+.wb-multi-cz {
+    font-size: 13px;
+    color: #fbbf24;
+    user-select: text;
+}
+
+/* Empty / Waiting state */
+.wb-empty-state {
+    text-align: center;
+    padding: 16px 8px;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.wb-empty-icon {
+    font-size: 24px;
+    margin-bottom: 6px;
+}
+
+/* Collapsible all words drawer */
+.wb-all-words-section {
+    margin-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 10px;
+}
+
+.wb-all-words-btn {
+    width: 100%;
+    background: #334155;
+    border: none;
+    color: #cbd5e1;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;}
+
+.wb-all-words-btn:hover {
+    background: #475569;
+    color: #ffffff;
+}
+
+.wb-all-words-content {
+    margin-top: 8px;
+    display: none;
+}
+
+.wb-all-words-content.wb-show {
+    display: block;
+}
+
+.wb-words-list {
+    max-height: 180px;
+    overflow-y: auto;
+    font-size: 12px;
+}
+
+.wb-word-row {
+    padding: 5px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    user-select: text;
+}
+
+.wb-word-row:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.wb-footer {
+    background: #0f172a;
+    padding: 6px 14px;
+    font-size: 11px;
+    color: #64748b;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
