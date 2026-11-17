@@ -1,6 +1,6 @@
 # LobotoBot 🐝
 
-LobotoBot je rozšíření pro prohlížeč Google Chrome, které slouží výhradně jako **pasivní nápověda pro učení jazyků**.
+LobotoBot je rozšíření pro prohlížeč Google Chrome, které slouží výhradně jako **pasivní nápověda**.
 
 Rozšíření **nevyplňuje cvičení za vás**. Celé cvičení děláte sami a učíte se.
 
