@@ -25,14 +25,12 @@
 
         createUI();
 
-        // Check for words data immediately
         const initialWords = getLocWords();
         if (initialWords) {
             wordsData = initialWords;
             updateView();
         }
 
-        // Watch for exercise/DOM changes in body
         if (document.body) {
             const observer = new MutationObserver(() => {
                 updateView();
@@ -40,10 +38,8 @@
             observer.observe(document.body, { childList: true, subtree: true });
         }
 
-        // Periodic check for word updates and exercise state
         setInterval(updateView, 350);
 
-        // Keyboard shortcut: Alt + H to toggle hint box, Escape to shrink
         window.addEventListener('keydown', (e) => {
             if (e.altKey && (e.key === 'h' || e.key === 'H')) {
                 e.preventDefault();
@@ -106,7 +102,6 @@
             return { type: 'none', message: 'Načítám slovíčka...' };
         }
 
-        // 1. Multi-pair exercises
         const pexesoCards = Array.from(document.querySelectorAll('.pexesoCardWrapper'))
             .filter(el => isElementVisible(el));
         if (pexesoCards.length > 0) {
@@ -115,7 +110,7 @@
                               .filter(Boolean)
                               .map(detectPair);
             if (pairs.length > 0) {
-                return { type: 'multi', title: 'Pexeso (Páry na ploše)', pairs: pairs };
+                return { type: 'multi', title: 'Pexeso', pairs: pairs };
             }
         }
 
@@ -143,7 +138,6 @@
             }
         }
 
-        // 2. Single word exercises
         let match = null;
 
         const wordIdEl = document.getElementById('word_id') || document.querySelector('input[name="word_id"]');
@@ -220,20 +214,22 @@
     function createUI() {
         if (shadow) return;
 
-        // Create an anonymous host div attached to documentElement
-        // Leaves document.body completely untouched and unpolluted
         const host = document.createElement('div');
         shadow = host.attachShadow({ mode: 'closed' });
 
         const style = document.createElement('style');
         style.textContent = `
+            *::-webkit-scrollbar {
+                display: none;
+            }
+
             :host {
                 all: initial;
                 position: fixed;
                 top: 14px;
                 right: 14px;
                 z-index: 2147483647;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                font-family: Helvetica, sans-serif;
                 user-select: none;
                 box-sizing: border-box;
             }
@@ -244,10 +240,8 @@
 
             .wb-root {
                 box-sizing: border-box;
-                transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
             }
 
-            /* Shrunk state */
             .wb-root.wb-shrunk {
                 width: 23px;
                 height: 27px;
@@ -294,7 +288,6 @@
                 background: #f59e0b;
             }
 
-            /* Expanded Card View */
             .wb-root:not(.wb-shrunk) {
                 width: 330px;
                 max-width: calc(100vw - 28px);
@@ -341,7 +334,6 @@
                 line-height: 1;
                 padding: 4px 6px;
                 border-radius: 4px;
-                transition: background 0.15s, color 0.15s;
             }
 
             .wb-btn-minimize:hover {
@@ -364,7 +356,6 @@
                 border-radius: 3px;
             }
 
-            /* Single Word Display */
             .wb-card-pair {
                 background: #0f172a;
                 border-radius: 8px;
@@ -428,7 +419,6 @@
                 user-select: text;
             }
 
-            /* Multi-pair List */
             .wb-multi-title {
                 font-size: 11.5px;
                 font-weight: 600;
@@ -462,7 +452,6 @@
                 user-select: text;
             }
 
-            /* Empty state */
             .wb-empty-state {
                 text-align: center;
                 padding: 16px 8px;
@@ -475,7 +464,6 @@
                 margin-bottom: 6px;
             }
 
-            /* Collapsible words list */
             .wb-all-words-section {
                 margin-top: 12px;
                 border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -547,7 +535,7 @@
         const container = document.createElement('div');
         container.className = 'wb-root' + (isShrunk ? ' wb-shrunk' : '');
         container.innerHTML = `
-            <div class="wb-panel-mini" title="Klikněte pro zobrazení (Alt+H)">
+            <div class="wb-panel-mini" title="Alt+H">
                 <span class="wb-pill-icon">🐝</span>
                 <span class="wb-pill-dot wb-dot-waiting" id="wb-status-dot"></span>
             </div>
@@ -558,7 +546,7 @@
                         <span>Překlad</span>
                     </div>
                     <div class="wb-header-actions">
-                        <button class="wb-btn-minimize" id="wb-btn-close" title="Zmenšit (Alt+H nebo Esc)">—</button>
+                        <button class="wb-btn-minimize" id="wb-btn-close" title="Alt+H"></button>
                     </div>
                 </div>
 
@@ -566,7 +554,7 @@
                     <div id="wb-active-content">
                         <div class="wb-empty-state">
                             <div class="wb-empty-icon"></div>
-                            <div>Načítám data...</div>
+                            <div>Načítám...</div>
                         </div>
                     </div>
 
@@ -590,7 +578,6 @@
         shadow.appendChild(container);
         (document.documentElement || document.body).appendChild(host);
 
-        // Events strictly scoped inside shadow root
         container.querySelector('.wb-panel-mini').addEventListener('click', (e) => {
             e.stopPropagation();
             setShrunk(false);
@@ -673,7 +660,6 @@
     }
 
     function updateView() {
-        // Direct read from memory in MAIN execution world
         const loc = getLocWords();
         if (loc && loc.length > 0) {
             wordsData = loc;
@@ -704,8 +690,7 @@
             if (current.answer) {
                 answerHtml = `
                     <div class="wb-answer-indicator">
-                        <span>👉</span>
-                        <span>Odpověď: <strong>${escapeHtml(current.answer)}</strong></span>
+                        <span><strong>${escapeHtml(current.answer)}</strong></span>
                     </div>
                 `;
             }
@@ -713,12 +698,10 @@
             container.innerHTML = `
                 <div class="wb-card-pair">
                     <div class="wb-word-block">
-                        <div class="wb-word-badge wb-badge-de">Německy</div>
                         <div class="wb-word-text">${escapeHtml(p.german)}</div>
                     </div>
                     <div class="wb-word-divider"></div>
                     <div class="wb-word-block">
-                        <div class="wb-word-badge wb-badge-cz">Česky</div>
                         <div class="wb-word-text">${escapeHtml(p.czech)}</div>
                     </div>
                     ${answerHtml}
@@ -741,7 +724,7 @@
         } else {
             const countText = wordsData && wordsData.length > 0 
                 ? `V balíčku je ${wordsData.length} slovíček.` 
-                : 'Čekám na načtení slovíček z WocaBee...';
+                : 'Čekám na načtení slovíček...';
 
             container.innerHTML = `
                 <div class="wb-empty-state">
