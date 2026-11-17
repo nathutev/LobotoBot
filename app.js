@@ -54,6 +54,19 @@
         return !!(el && el.offsetParent !== null && window.getComputedStyle(el).display !== 'none' && window.getComputedStyle(el).visibility !== 'hidden');
     }
 
+    function cleanStr(s) {
+        if (!s) return '';
+        return s.toLowerCase()
+            .replace(/[\u00A0\s]+/g, ' ')
+            .replace(/^[.,\/#!$%\^&\*;:{}=\-_`~()?"'„“”«»]+|[.,\/#!$%\^&\*;:{}=\-_`~()?"'„“”«»]+$/g, '')
+            .trim();
+    }
+
+    function stripArt(s) {
+        if (!s) return '';
+        return s.replace(/^(der|die|das|ein|eine|einen|einem|einer|eines|the|a|an)\s+/i, '');
+    }
+
     function detectPair(w) {
         if (!w) return null;
         let de = (w.word || '').trim();
@@ -85,15 +98,82 @@
             '#cs_word',
             '#tfw_word',
             '#def-lang-sentence',
-            '#transcribeWord'
+            '#transcribeWord',
+            '#completeWordQuestion',
+            '#translateWord',
+            '#q_word',
+            '#tf_word',
+            '#up_word',
+            '#describePictureAnswer'
         ];
         for (const sel of questionSelectors) {
             const el = document.querySelector(sel);
             if (el && isElementVisible(el)) {
-                const txt = el.innerText.trim();
+                const txt = (el.innerText || el.textContent || '').trim();
                 if (txt) return txt;
             }
         }
+        return null;
+    }
+
+    function determineExpectedAnswer(pair, qText) {
+        if (!pair) return null;
+
+        const patternEl = document.getElementById('completeWordAnswer');
+        if (patternEl && isElementVisible(patternEl)) {
+            const pattern = patternEl.innerText.trim();
+            if (pattern && pattern.includes('_')) {
+                const regexStr = '^' + pattern.replace(/[\s\u00A0]+/g, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/_/g, '.') + '$';
+                const regex = new RegExp(regexStr, 'i');
+                const deNoSpaces = (pair.german || '').replace(/\s+/g, '');
+                const czNoSpaces = (pair.czech || '').replace(/\s+/g, '');
+                if (regex.test(deNoSpaces)) return pair.german;
+                if (regex.test(czNoSpaces)) return pair.czech;
+            }
+        }
+
+        const q = qText || getActiveQuestionText();
+        if (q) {
+            const qClean = cleanStr(q);
+            const czClean = cleanStr(pair.czech);
+            const deClean = cleanStr(pair.german);
+
+            if (czClean && qClean === czClean) return pair.german;
+            if (deClean && qClean === deClean) return pair.czech;
+
+            const czParts = (pair.czech || '').split(/[,;\/]/).map(cleanStr).filter(Boolean);
+            const deParts = (pair.german || '').split(/[,;\/]/).map(cleanStr).filter(Boolean);
+
+            if (czParts.includes(qClean)) return pair.german;
+            if (deParts.includes(qClean)) return pair.czech;
+
+            const qNoArt = cleanStr(stripArt(qClean));
+            const deNoArt = cleanStr(stripArt(deClean));
+
+            if (qNoArt && deNoArt && qNoArt === deNoArt) return pair.czech;
+            if (deParts.some(p => cleanStr(stripArt(p)) === qNoArt)) return pair.czech;
+
+            if (czClean && (czClean.includes(qClean) || qClean.includes(czClean))) return pair.german;
+            if (deClean && (deClean.includes(qClean) || qClean.includes(deClean))) return pair.czech;
+            if (czParts.some(p => p.includes(qClean) || qClean.includes(p))) return pair.german;
+            if (deParts.some(p => p.includes(qClean) || qClean.includes(p))) return pair.czech;
+        }
+
+        const candidates = document.querySelectorAll('.practice, #practice, #exercise, .exercise, #gameBody, #game, .game');
+        for (const container of candidates) {
+            if (!isElementVisible(container)) continue;
+            const nodes = container.querySelectorAll('h1, h2, h3, h4, span, div, p, label');
+            for (const node of nodes) {
+                if (!isElementVisible(node) || node.children.length > 2) continue;
+                const txt = cleanStr(node.innerText);
+                if (!txt || txt.length > 100) continue;
+                const czClean = cleanStr(pair.czech);
+                const deClean = cleanStr(pair.german);
+                if (txt === czClean || txt === cleanStr(stripArt(pair.czech))) return pair.german;
+                if (txt === deClean || txt === cleanStr(stripArt(pair.german))) return pair.czech;
+            }
+        }
+
         return null;
     }
 
@@ -126,15 +206,62 @@
             }
         }
 
-        const findPairBtns = Array.from(document.querySelectorAll('#q_words .btn, .fp_q, #a_words .btn, .fp_a'))
+        const qBtns = Array.from(document.querySelectorAll('#q_words .btn, #q_words button, .fp_q'))
             .filter(el => isElementVisible(el) && !el.disabled && !el.classList.contains('btn-success-active'));
-        if (findPairBtns.length > 0) {
-            const wIds = [...new Set(findPairBtns.map(b => b.getAttribute('w_id')).filter(Boolean))];
-            const pairs = wIds.map(id => wordsData.find(w => String(w.word_id) === String(id) || String(w.id) === String(id)))
-                              .filter(Boolean)
-                              .map(detectPair);
+        const aBtns = Array.from(document.querySelectorAll('#a_words .btn, #a_words button, .fp_a'))
+            .filter(el => isElementVisible(el) && !el.disabled && !el.classList.contains('btn-success-active'));
+        const allFpBtns = Array.from(document.querySelectorAll('#q_words .btn, #q_words button, .fp_q, #a_words .btn, #a_words button, .fp_a, #findPairWords .btn, .findPairBtn'))
+            .filter(el => isElementVisible(el) && !el.disabled && !el.classList.contains('btn-success-active'));
+
+        if (allFpBtns.length > 0) {
+            let realWords = [];
+
+            if (qBtns.length > 0 && aBtns.length > 0) {
+                const qIds = qBtns.map(b => b.getAttribute('w_id') || b.getAttribute('wid') || (b.dataset && b.dataset.wid)).filter(Boolean);
+                const aIds = aBtns.map(b => b.getAttribute('w_id') || b.getAttribute('wid') || (b.dataset && b.dataset.wid)).filter(Boolean);
+                const commonIds = [...new Set(qIds.filter(id => aIds.includes(id)))];
+                if (commonIds.length > 0) {
+                    realWords = commonIds.map(id => wordsData.find(w => String(w.word_id) === String(id) || String(w.id) === String(id))).filter(Boolean);
+                }
+            }
+
+            if (realWords.length === 0) {
+                const idCounts = {};
+                for (const b of allFpBtns) {
+                    const id = b.getAttribute('w_id') || b.getAttribute('wid') || (b.dataset && b.dataset.wid);
+                    if (id) {
+                        idCounts[id] = (idCounts[id] || 0) + 1;
+                    }
+                }
+                const duplicateIds = Object.keys(idCounts).filter(id => idCounts[id] >= 2);
+                if (duplicateIds.length > 0) {
+                    realWords = duplicateIds.map(id => wordsData.find(w => String(w.word_id) === String(id) || String(w.id) === String(id))).filter(Boolean);
+                }
+            }
+
+            if (realWords.length === 0) {
+                const btnTexts = allFpBtns.map(b => cleanStr(b.innerText)).filter(Boolean);
+                realWords = wordsData.filter(w => {
+                    const pair = detectPair(w);
+                    if (!pair) return false;
+                    const cz = cleanStr(pair.czech);
+                    const de = cleanStr(pair.german);
+                    const czNoArt = cleanStr(stripArt(pair.czech));
+                    const deNoArt = cleanStr(stripArt(pair.german));
+
+                    const czParts = (pair.czech || '').split(/[,;\/]/).map(cleanStr).filter(Boolean);
+                    const deParts = (pair.german || '').split(/[,;\/]/).map(cleanStr).filter(Boolean);
+
+                    const hasDe = btnTexts.some(t => t === de || t === deNoArt || deParts.includes(t) || (t.length > 2 && (de.includes(t) || t.includes(de))));
+                    const hasCz = btnTexts.some(t => t === cz || t === czNoArt || czParts.includes(t) || (t.length > 2 && (cz.includes(t) || t.includes(cz))));
+
+                    return hasDe && hasCz;
+                });
+            }
+
+            const pairs = realWords.map(detectPair).filter(Boolean);
             if (pairs.length > 0) {
-                return { type: 'multi', title: 'Hledání párů', pairs: pairs };
+                return { type: 'multi', title: 'Správný pár', pairs: pairs };
             }
         }
 
@@ -148,11 +275,13 @@
 
         const qText = getActiveQuestionText();
         if (!match && qText) {
-            const qLower = qText.toLowerCase();
-            match = wordsData.find(w => 
-                (w.word && w.word.trim().toLowerCase() === qLower) || 
-                (w.translation && w.translation.trim().toLowerCase() === qLower)
-            );
+            const qClean = cleanStr(qText);
+            match = wordsData.find(w => {
+                const wClean = cleanStr(w.word);
+                const tClean = cleanStr(w.translation);
+                return (wClean && (wClean === qClean || wClean.includes(qClean) || qClean.includes(wClean))) ||
+                       (tClean && (tClean === qClean || tClean.includes(qClean) || qClean.includes(tClean)));
+            });
         }
 
         if (!match) {
@@ -160,9 +289,9 @@
             if (patternEl && isElementVisible(patternEl)) {
                 const pattern = patternEl.innerText.trim();
                 if (pattern && pattern.includes('_')) {
-                    const regexStr = '^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/_/g, '.') + '$';
+                    const regexStr = '^' + pattern.replace(/[\s\u00A0]+/g, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/_/g, '.') + '$';
                     const regex = new RegExp(regexStr, 'i');
-                    match = wordsData.find(w => regex.test(w.word) || regex.test(w.translation));
+                    match = wordsData.find(w => regex.test((w.word || '').replace(/\s+/g, '')) || regex.test((w.translation || '').replace(/\s+/g, '')));
                 }
             }
         }
@@ -170,10 +299,10 @@
         if (!match) {
             const aWordEl = document.getElementById('a_word');
             if (aWordEl && aWordEl.value) {
-                const val = aWordEl.value.trim().toLowerCase();
+                const valClean = cleanStr(aWordEl.value);
                 match = wordsData.find(w => 
-                    (w.word && w.word.trim().toLowerCase() === val) || 
-                    (w.translation && w.translation.trim().toLowerCase() === val)
+                    (cleanStr(w.word) === valClean) || 
+                    (cleanStr(w.translation) === valClean)
                 );
             }
         }
@@ -191,15 +320,7 @@
 
         if (match) {
             const pair = detectPair(match);
-            let expectedAnswer = null;
-            if (qText) {
-                const qLower = qText.toLowerCase();
-                if (pair.czech.toLowerCase() === qLower) {
-                    expectedAnswer = pair.german;
-                } else if (pair.german.toLowerCase() === qLower) {
-                    expectedAnswer = pair.czech;
-                }
-            }
+            const expectedAnswer = determineExpectedAnswer(pair, qText);
             return {
                 type: 'single',
                 pair: pair,
@@ -277,19 +398,8 @@
                 line-height: 1;
             }
 
-            .wb-pill-dot {
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: #22c55e;
-            }
-
-            .wb-pill-dot.wb-dot-waiting {
-                background: #f59e0b;
-            }
-
             .wb-root:not(.wb-shrunk) {
-                width: 330px;
+                width: 260px;
                 max-width: calc(100vw - 28px);
                 background: #1e293b;
                 color: #f8fafc;
@@ -301,7 +411,7 @@
 
             .wb-header {
                 background: #0f172a;
-                padding: 10px 14px;
+                padding: 8px 12px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -342,7 +452,7 @@
             }
 
             .wb-body {
-                padding: 12px 14px;
+                padding: 10px 12px;
                 max-height: 480px;
                 overflow-y: auto;
             }
@@ -359,63 +469,16 @@
             .wb-card-pair {
                 background: #0f172a;
                 border-radius: 8px;
-                padding: 12px;
+                padding: 10px 12px;
                 border: 1px solid rgba(255, 255, 255, 0.08);
             }
 
-            .wb-word-block {
-                margin-bottom: 10px;
-            }
-
-            .wb-word-block:last-child {
-                margin-bottom: 0;
-            }
-
-            .wb-word-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-                font-size: 11px;
-                font-weight: 700;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                margin-bottom: 3px;
-            }
-
-            .wb-badge-de {
-                color: #38bdf8;
-            }
-
-            .wb-badge-cz {
-                color: #fbbf24;
-            }
-
             .wb-word-text {
-                font-size: 17px;
+                font-size: 16px;
                 font-weight: 700;
                 color: #ffffff;
-                line-height: 1.3;
+                line-height: 1.35;
                 word-break: break-word;
-                user-select: text;
-            }
-
-            .wb-word-divider {
-                height: 1px;
-                background: rgba(255, 255, 255, 0.08);
-                margin: 8px 0;
-            }
-
-            .wb-answer-indicator {
-                margin-top: 10px;
-                background: rgba(34, 197, 94, 0.12);
-                border: 1px solid rgba(34, 197, 94, 0.3);
-                border-radius: 6px;
-                padding: 6px 10px;
-                font-size: 11.5px;
-                color: #4ade80;
-                display: flex;
-                align-items: center;
-                gap: 6px;
                 user-select: text;
             }
 
@@ -439,16 +502,9 @@
                 gap: 2px;
             }
 
-            .wb-multi-de {
+            .wb-multi-de, .wb-multi-cz {
                 font-size: 14px;
                 font-weight: 700;
-                color: #38bdf8;
-                user-select: text;
-            }
-
-            .wb-multi-cz {
-                font-size: 13px;
-                color: #fbbf24;
                 user-select: text;
             }
 
@@ -465,9 +521,9 @@
             }
 
             .wb-all-words-section {
-                margin-top: 12px;
+                margin-top: 8px;
                 border-top: 1px solid rgba(255, 255, 255, 0.08);
-                padding-top: 10px;
+                padding-top: 8px;
             }
 
             .wb-all-words-btn {
@@ -521,7 +577,7 @@
 
             .wb-footer {
                 background: #0f172a;
-                padding: 6px 14px;
+                padding: 5px 12px;
                 font-size: 11px;
                 color: #64748b;
                 border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -537,7 +593,6 @@
         container.innerHTML = `
             <div class="wb-panel-mini" title="Alt+H">
                 <span class="wb-pill-icon">🐝</span>
-                <span class="wb-pill-dot wb-dot-waiting" id="wb-status-dot"></span>
             </div>
 
             <div class="wb-panel-full">
@@ -625,6 +680,19 @@
 
     function escapeHtml(str) {
         if (!str) return '';
+        if (typeof str !== 'string') {
+            if (typeof str === 'object') {
+                if (str.german || str.czech) {
+                    str = (str.german && str.czech) ? `${str.german} / ${str.czech}` : (str.german || str.czech);
+                } else if (str.word || str.translation) {
+                    str = (str.word && str.translation) ? `${str.word} / ${str.translation}` : (str.word || str.translation);
+                } else {
+                    str = String(str);
+                }
+            } else {
+                str = String(str);
+            }
+        }
         return str
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
@@ -686,25 +754,11 @@
 
         if (current.type === 'single') {
             const p = current.pair;
-            let answerHtml = '';
-            if (current.answer) {
-                answerHtml = `
-                    <div class="wb-answer-indicator">
-                        <span><strong>${escapeHtml(current.answer)}</strong></span>
-                    </div>
-                `;
-            }
+            const targetWord = current.answer || '';
 
             container.innerHTML = `
                 <div class="wb-card-pair">
-                    <div class="wb-word-block">
-                        <div class="wb-word-text">${escapeHtml(p.german)}</div>
-                    </div>
-                    <div class="wb-word-divider"></div>
-                    <div class="wb-word-block">
-                        <div class="wb-word-text">${escapeHtml(p.czech)}</div>
-                    </div>
-                    ${answerHtml}
+                    <div class="wb-word-text">${escapeHtml(targetWord)}</div>
                 </div>
             `;
         } else if (current.type === 'multi') {
