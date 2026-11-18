@@ -764,8 +764,8 @@
         } else if (current.type === 'multi') {
             const itemsHtml = current.pairs.map(p => `
                 <div class="wb-multi-item">
-                    <div class="wb-multi-de">${escapeHtml(p.german)}</div>
                     <div class="wb-multi-cz">${escapeHtml(p.czech)}</div>
+                    <div class="wb-multi-de">${escapeHtml(p.german)}</div>
                 </div>
             `).join('');
 
