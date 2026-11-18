@@ -377,12 +377,8 @@
             }
 
             .wb-root.wb-shrunk:hover {
-                background: #334155 !important;
-                border-color: rgba(255, 255, 255, 0.25);
-                transform: translateY(-1px);
-                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+                transform: scale(1.2);
                 opacity: 1 !important;
-                border-radius: 6px;
             }
 
             .wb-root.wb-shrunk .wb-panel-full {
@@ -575,12 +571,11 @@
                 background: rgba(255, 255, 255, 0.03);
             }
 
-            .wb-footer {
+            #wb-btn-close {
                 background: #0f172a;
                 padding: 5px 12px;
                 font-size: 11px;
                 color: #64748b;
-                border-top: 1px solid rgba(255, 255, 255, 0.06);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -601,7 +596,7 @@
                         <span>Překlad</span>
                     </div>
                     <div class="wb-header-actions">
-                        <button class="wb-btn-minimize" id="wb-btn-close" title="Alt+H"></button>
+                        <button class="wb-btn-minimize" id="wb-btn-close" title="Alt+H">Alt+H</button>
                     </div>
                 </div>
 
@@ -622,10 +617,6 @@
                             <div class="wb-words-list" id="wb-words-list"></div>
                         </div>
                     </div>
-                </div>
-
-                <div class="wb-footer">
-                    <span>Alt + H</span>
                 </div>
             </div>
         `;
@@ -778,7 +769,7 @@
         } else {
             const countText = wordsData && wordsData.length > 0 
                 ? `V balíčku je ${wordsData.length} slovíček.` 
-                : 'Čekám na načtení slovíček...';
+                : '';
 
             container.innerHTML = `
                 <div class="wb-empty-state">
