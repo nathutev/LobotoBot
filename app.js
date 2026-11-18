@@ -720,8 +720,8 @@
             const pair = detectPair(w);
             return `
                 <div class="wb-word-row">
-                    <span style="color:#38bdf8; font-weight:600;">${escapeHtml(pair.german)}</span>
-                    <span style="color:#fbbf24;">${escapeHtml(pair.czech)}</span>
+                    <span style="color:#38bdf8; font-weight:600;">${escapeHtml(pair.czech)}</span>
+                    <span style="color:#fbbf24;">${escapeHtml(pair.german)}</span>
                 </div>
             `;
         }).join('');
@@ -754,7 +754,7 @@
 
         if (current.type === 'single') {
             const p = current.pair;
-            const targetWord = current.answer || '';
+            const targetWord = current.answer || p.czech + ' / ' + p.german;
 
             container.innerHTML = `
                 <div class="wb-card-pair">
